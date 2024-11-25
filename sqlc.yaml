@@ -1,0 +1,19 @@
+version: "2"
+sql:
+  - engine: "mysql"
+    schema: "schema.sql"
+    queries:
+      - "queries/audit_logs.sql"
+      - "queries/groups.sql"
+      - "queries/organizations.sql"
+      - "queries/permissions.sql"
+      - "queries/resources.sql"
+      - "queries/roles.sql"
+      - "queries/users.sql"
+      - "queries/users_groups.sql"
+      - "queries/users_permissions.sql"
+      - "queries/users_roles.sql"
+    gen:
+      go:
+        package: "db"
+        out: "internal/db"
