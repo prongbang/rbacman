@@ -7,33 +7,50 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUser = `-- name: CreateUser :exec
 INSERT INTO users (first_name, last_name, username, email, password, avatar)
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES (?, ?, ?, ?, ?, ?)
 `
 
-func (q *Queries) CreateUser(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createUser)
+type CreateUserParams struct {
+	FirstName sql.NullString
+	LastName  sql.NullString
+	Username  sql.NullString
+	Email     sql.NullString
+	Password  sql.NullString
+	Avatar    sql.NullString
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
+	_, err := q.db.ExecContext(ctx, createUser,
+		arg.FirstName,
+		arg.LastName,
+		arg.Username,
+		arg.Email,
+		arg.Password,
+		arg.Avatar,
+	)
 	return err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users WHERE id = $1
+DELETE FROM users WHERE id = ?
 `
 
-func (q *Queries) DeleteUser(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteUser)
+func (q *Queries) DeleteUser(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, username, email, password, avatar, created_at, updated_at, active, flag FROM users WHERE id = $1
+SELECT id, first_name, last_name, username, email, password, avatar, created_at, updated_at, active, flag FROM users WHERE id = ?
 `
 
-func (q *Queries) GetUserByID(ctx context.Context) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByID)
+func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -54,26 +71,64 @@ func (q *Queries) GetUserByID(ctx context.Context) (User, error) {
 const updateUser = `-- name: UpdateUser :exec
 UPDATE users
 SET
-    first_name = COALESCE($2, first_name),
-    last_name = COALESCE($3, last_name),
-    username = COALESCE($4, username),
-    email = COALESCE($5, email),
-    password = COALESCE($6, password),
-    avatar = COALESCE($7, avatar),
-    active = COALESCE($8, active),
-    flag = COALESCE($9, flag)
-WHERE id = $1
-  AND (COALESCE($2, first_name) != first_name
-         OR COALESCE($3, last_name) != last_name
-         OR COALESCE($4, username) != username
-         OR COALESCE($5, email) != email
-         OR COALESCE($6, password) != password
-         OR COALESCE($7, avatar) != avatar
-         OR COALESCE($8, active) != active
-         OR COALESCE($9, flag) != flag)
+    first_name = COALESCE(?, first_name),
+    last_name = COALESCE(?, last_name),
+    username = COALESCE(?, username),
+    email = COALESCE(?, email),
+    password = COALESCE(?, password),
+    avatar = COALESCE(?, avatar),
+    active = COALESCE(?, active),
+    flag = COALESCE(?, flag)
+WHERE id = ?
+  AND (COALESCE(?, first_name) != first_name
+         OR COALESCE(?, last_name) != last_name
+         OR COALESCE(?, username) != username
+         OR COALESCE(?, email) != email
+         OR COALESCE(?, password) != password
+         OR COALESCE(?, avatar) != avatar
+         OR COALESCE(?, active) != active
+         OR COALESCE(?, flag) != flag)
 `
 
-func (q *Queries) UpdateUser(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateUser)
+type UpdateUserParams struct {
+	FirstName   sql.NullString
+	LastName    sql.NullString
+	Username    sql.NullString
+	Email       sql.NullString
+	Password    sql.NullString
+	Avatar      sql.NullString
+	Active      sql.NullInt16
+	Flag        sql.NullInt32
+	ID          string
+	FirstName_2 sql.NullString
+	LastName_2  sql.NullString
+	Username_2  sql.NullString
+	Email_2     sql.NullString
+	Password_2  sql.NullString
+	Avatar_2    sql.NullString
+	Active_2    sql.NullInt16
+	Flag_2      sql.NullInt32
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.ExecContext(ctx, updateUser,
+		arg.FirstName,
+		arg.LastName,
+		arg.Username,
+		arg.Email,
+		arg.Password,
+		arg.Avatar,
+		arg.Active,
+		arg.Flag,
+		arg.ID,
+		arg.FirstName_2,
+		arg.LastName_2,
+		arg.Username_2,
+		arg.Email_2,
+		arg.Password_2,
+		arg.Avatar_2,
+		arg.Active_2,
+		arg.Flag_2,
+	)
 	return err
 }

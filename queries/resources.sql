@@ -1,18 +1,18 @@
 
 -- name: CreateResource :exec
-INSERT INTO resources (id, name, code) VALUES ($1, $2, $3);
+INSERT INTO resources (id, name, code) VALUES (?, ?, ?);
 
 -- name: GetResourceByID :one
-SELECT * FROM resources WHERE id = $1;
+SELECT * FROM resources WHERE id = ?;
 
 -- name: UpdateResource :exec
 UPDATE resources
 SET
-    name = COALESCE($2, name),
-    code = COALESCE($3, code)
-WHERE id = $1
-  AND (COALESCE($2, name) != name
-         OR COALESCE($3, code) != code);
+    name = COALESCE(?, name),
+    code = COALESCE(?, code)
+WHERE id = ?
+  AND (COALESCE(?, name) != name
+         OR COALESCE(?, code) != code);
 
 -- name: DeleteResource :exec
-DELETE FROM resources WHERE id = $1;
+DELETE FROM resources WHERE id = ?;

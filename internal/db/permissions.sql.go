@@ -7,32 +7,39 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createPermission = `-- name: CreatePermission :exec
-INSERT INTO permissions (id, name, code) VALUES ($1, $2, $3)
+INSERT INTO permissions (id, name, code) VALUES (?, ?, ?)
 `
 
-func (q *Queries) CreatePermission(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createPermission)
+type CreatePermissionParams struct {
+	ID   int32
+	Name sql.NullString
+	Code sql.NullString
+}
+
+func (q *Queries) CreatePermission(ctx context.Context, arg CreatePermissionParams) error {
+	_, err := q.db.ExecContext(ctx, createPermission, arg.ID, arg.Name, arg.Code)
 	return err
 }
 
 const deletePermission = `-- name: DeletePermission :exec
-DELETE FROM permissions WHERE id = $1
+DELETE FROM permissions WHERE id = ?
 `
 
-func (q *Queries) DeletePermission(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deletePermission)
+func (q *Queries) DeletePermission(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deletePermission, id)
 	return err
 }
 
 const getPermissionByID = `-- name: GetPermissionByID :one
-SELECT id, name, code FROM permissions WHERE id = $1
+SELECT id, name, code FROM permissions WHERE id = ?
 `
 
-func (q *Queries) GetPermissionByID(ctx context.Context) (Permission, error) {
-	row := q.db.QueryRowContext(ctx, getPermissionByID)
+func (q *Queries) GetPermissionByID(ctx context.Context, id int32) (Permission, error) {
+	row := q.db.QueryRowContext(ctx, getPermissionByID, id)
 	var i Permission
 	err := row.Scan(&i.ID, &i.Name, &i.Code)
 	return i, err
@@ -41,14 +48,28 @@ func (q *Queries) GetPermissionByID(ctx context.Context) (Permission, error) {
 const updatePermission = `-- name: UpdatePermission :exec
 UPDATE permissions
 SET
-    name = COALESCE($2, name),
-    code = COALESCE($3, code)
-WHERE id = $1
-  AND (COALESCE($2, name) != name
-         OR COALESCE($3, code) != code)
+    name = COALESCE(?, name),
+    code = COALESCE(?, code)
+WHERE id = ?
+  AND (COALESCE(?, name) != name
+         OR COALESCE(?, code) != code)
 `
 
-func (q *Queries) UpdatePermission(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updatePermission)
+type UpdatePermissionParams struct {
+	Name   sql.NullString
+	Code   sql.NullString
+	ID     int32
+	Name_2 sql.NullString
+	Code_2 sql.NullString
+}
+
+func (q *Queries) UpdatePermission(ctx context.Context, arg UpdatePermissionParams) error {
+	_, err := q.db.ExecContext(ctx, updatePermission,
+		arg.Name,
+		arg.Code,
+		arg.ID,
+		arg.Name_2,
+		arg.Code_2,
+	)
 	return err
 }

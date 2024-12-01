@@ -1,16 +1,16 @@
 
 -- name: CreateGroup :exec
-INSERT INTO `groups` (id, name) VALUES ($1, $2);
+INSERT INTO `groups` (id, name) VALUES (?, ?);
 
 -- name: GetGroupByID :one
-SELECT * FROM `groups` WHERE id = $1;
+SELECT * FROM `groups` WHERE id = ?;
 
 -- name: UpdateGroup :exec
 UPDATE `groups`
 SET
-    name = COALESCE($2, name)
-WHERE id = $1
-  AND COALESCE($2, name) != name;
+    name = COALESCE(?, name)
+WHERE id = ?
+  AND COALESCE(?, name) != name;
 
 -- name: DeleteGroup :exec
-DELETE FROM `groups` WHERE id = $1;
+DELETE FROM `groups` WHERE id = ?;

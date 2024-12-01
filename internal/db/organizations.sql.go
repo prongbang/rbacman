@@ -7,32 +7,39 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createOrganization = `-- name: CreateOrganization :exec
-INSERT INTO organizations (id, name, parent_id) VALUES ($1, $2, $3)
+INSERT INTO organizations (id, name, parent_id) VALUES (?, ?, ?)
 `
 
-func (q *Queries) CreateOrganization(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createOrganization)
+type CreateOrganizationParams struct {
+	ID       int32
+	Name     sql.NullString
+	ParentID sql.NullInt32
+}
+
+func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) error {
+	_, err := q.db.ExecContext(ctx, createOrganization, arg.ID, arg.Name, arg.ParentID)
 	return err
 }
 
 const deleteOrganization = `-- name: DeleteOrganization :exec
-DELETE FROM organizations WHERE id = $1
+DELETE FROM organizations WHERE id = ?
 `
 
-func (q *Queries) DeleteOrganization(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteOrganization)
+func (q *Queries) DeleteOrganization(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteOrganization, id)
 	return err
 }
 
 const getOrganizationByID = `-- name: GetOrganizationByID :one
-SELECT id, name, parent_id FROM organizations WHERE id = $1
+SELECT id, name, parent_id FROM organizations WHERE id = ?
 `
 
-func (q *Queries) GetOrganizationByID(ctx context.Context) (Organization, error) {
-	row := q.db.QueryRowContext(ctx, getOrganizationByID)
+func (q *Queries) GetOrganizationByID(ctx context.Context, id int32) (Organization, error) {
+	row := q.db.QueryRowContext(ctx, getOrganizationByID, id)
 	var i Organization
 	err := row.Scan(&i.ID, &i.Name, &i.ParentID)
 	return i, err
@@ -41,14 +48,28 @@ func (q *Queries) GetOrganizationByID(ctx context.Context) (Organization, error)
 const updateOrganization = `-- name: UpdateOrganization :exec
 UPDATE organizations
 SET
-    name = COALESCE($2, name),
-    parent_id = COALESCE($3, parent_id)
-WHERE id = $1
-  AND (COALESCE($2, name) != name
-         OR COALESCE($3, parent_id) != parent_id)
+    name = COALESCE(?, name),
+    parent_id = COALESCE(?, parent_id)
+WHERE id = ?
+  AND (COALESCE(?, name) != name
+         OR COALESCE(?, parent_id) != parent_id)
 `
 
-func (q *Queries) UpdateOrganization(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateOrganization)
+type UpdateOrganizationParams struct {
+	Name       sql.NullString
+	ParentID   sql.NullInt32
+	ID         int32
+	Name_2     sql.NullString
+	ParentID_2 sql.NullInt32
+}
+
+func (q *Queries) UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) error {
+	_, err := q.db.ExecContext(ctx, updateOrganization,
+		arg.Name,
+		arg.ParentID,
+		arg.ID,
+		arg.Name_2,
+		arg.ParentID_2,
+	)
 	return err
 }

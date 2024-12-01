@@ -7,32 +7,38 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createRole = `-- name: CreateRole :exec
-INSERT INTO roles (id, name) VALUES ($1, $2)
+INSERT INTO roles (id, name) VALUES (?, ?)
 `
 
-func (q *Queries) CreateRole(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createRole)
+type CreateRoleParams struct {
+	ID   string
+	Name sql.NullString
+}
+
+func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
+	_, err := q.db.ExecContext(ctx, createRole, arg.ID, arg.Name)
 	return err
 }
 
 const deleteRole = `-- name: DeleteRole :exec
-DELETE FROM roles WHERE id = $1
+DELETE FROM roles WHERE id = ?
 `
 
-func (q *Queries) DeleteRole(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteRole)
+func (q *Queries) DeleteRole(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteRole, id)
 	return err
 }
 
 const getRoleByID = `-- name: GetRoleByID :one
-SELECT id, name, level FROM roles WHERE id = $1
+SELECT id, name, level FROM roles WHERE id = ?
 `
 
-func (q *Queries) GetRoleByID(ctx context.Context) (Role, error) {
-	row := q.db.QueryRowContext(ctx, getRoleByID)
+func (q *Queries) GetRoleByID(ctx context.Context, id string) (Role, error) {
+	row := q.db.QueryRowContext(ctx, getRoleByID, id)
 	var i Role
 	err := row.Scan(&i.ID, &i.Name, &i.Level)
 	return i, err
@@ -41,14 +47,28 @@ func (q *Queries) GetRoleByID(ctx context.Context) (Role, error) {
 const updateRole = `-- name: UpdateRole :exec
 UPDATE roles
 SET
-    name = COALESCE($2, name),
-    level = COALESCE($3, level)
-WHERE id = $1
-  AND (COALESCE($2, name) != name
-         OR COALESCE($3, level) != level)
+    name = COALESCE(?, name),
+    level = COALESCE(?, level)
+WHERE id = ?
+  AND (COALESCE(?, name) != name
+         OR COALESCE(?, level) != level)
 `
 
-func (q *Queries) UpdateRole(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateRole)
+type UpdateRoleParams struct {
+	Name    sql.NullString
+	Level   sql.NullInt32
+	ID      string
+	Name_2  sql.NullString
+	Level_2 sql.NullInt32
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) error {
+	_, err := q.db.ExecContext(ctx, updateRole,
+		arg.Name,
+		arg.Level,
+		arg.ID,
+		arg.Name_2,
+		arg.Level_2,
+	)
 	return err
 }

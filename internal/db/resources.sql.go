@@ -7,32 +7,39 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createResource = `-- name: CreateResource :exec
-INSERT INTO resources (id, name, code) VALUES ($1, $2, $3)
+INSERT INTO resources (id, name, code) VALUES (?, ?, ?)
 `
 
-func (q *Queries) CreateResource(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createResource)
+type CreateResourceParams struct {
+	ID   int32
+	Name sql.NullString
+	Code sql.NullString
+}
+
+func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) error {
+	_, err := q.db.ExecContext(ctx, createResource, arg.ID, arg.Name, arg.Code)
 	return err
 }
 
 const deleteResource = `-- name: DeleteResource :exec
-DELETE FROM resources WHERE id = $1
+DELETE FROM resources WHERE id = ?
 `
 
-func (q *Queries) DeleteResource(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteResource)
+func (q *Queries) DeleteResource(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteResource, id)
 	return err
 }
 
 const getResourceByID = `-- name: GetResourceByID :one
-SELECT id, name, code FROM resources WHERE id = $1
+SELECT id, name, code FROM resources WHERE id = ?
 `
 
-func (q *Queries) GetResourceByID(ctx context.Context) (Resource, error) {
-	row := q.db.QueryRowContext(ctx, getResourceByID)
+func (q *Queries) GetResourceByID(ctx context.Context, id int32) (Resource, error) {
+	row := q.db.QueryRowContext(ctx, getResourceByID, id)
 	var i Resource
 	err := row.Scan(&i.ID, &i.Name, &i.Code)
 	return i, err
@@ -41,14 +48,28 @@ func (q *Queries) GetResourceByID(ctx context.Context) (Resource, error) {
 const updateResource = `-- name: UpdateResource :exec
 UPDATE resources
 SET
-    name = COALESCE($2, name),
-    code = COALESCE($3, code)
-WHERE id = $1
-  AND (COALESCE($2, name) != name
-         OR COALESCE($3, code) != code)
+    name = COALESCE(?, name),
+    code = COALESCE(?, code)
+WHERE id = ?
+  AND (COALESCE(?, name) != name
+         OR COALESCE(?, code) != code)
 `
 
-func (q *Queries) UpdateResource(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateResource)
+type UpdateResourceParams struct {
+	Name   sql.NullString
+	Code   sql.NullString
+	ID     int32
+	Name_2 sql.NullString
+	Code_2 sql.NullString
+}
+
+func (q *Queries) UpdateResource(ctx context.Context, arg UpdateResourceParams) error {
+	_, err := q.db.ExecContext(ctx, updateResource,
+		arg.Name,
+		arg.Code,
+		arg.ID,
+		arg.Name_2,
+		arg.Code_2,
+	)
 	return err
 }

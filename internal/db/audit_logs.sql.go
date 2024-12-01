@@ -7,14 +7,27 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const createAuditLog = `-- name: CreateAuditLog :exec
-INSERT INTO audit_logs (id, user_id, action, resource) VALUES ($1, $2, $3, $4)
+INSERT INTO audit_logs (id, user_id, action, resource) VALUES (?, ?, ?, ?)
 `
 
-func (q *Queries) CreateAuditLog(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createAuditLog)
+type CreateAuditLogParams struct {
+	ID       string
+	UserID   string
+	Action   string
+	Resource string
+}
+
+func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error {
+	_, err := q.db.ExecContext(ctx, createAuditLog,
+		arg.ID,
+		arg.UserID,
+		arg.Action,
+		arg.Resource,
+	)
 	return err
 }
 
@@ -52,11 +65,11 @@ func (q *Queries) GetAllAuditLogs(ctx context.Context) ([]AuditLog, error) {
 }
 
 const getAuditLogsByUserID = `-- name: GetAuditLogsByUserID :many
-SELECT id, user_id, action, resource, timestamp FROM audit_logs WHERE user_id = $1
+SELECT id, user_id, action, resource, timestamp FROM audit_logs WHERE user_id = ?
 `
 
-func (q *Queries) GetAuditLogsByUserID(ctx context.Context) ([]AuditLog, error) {
-	rows, err := q.db.QueryContext(ctx, getAuditLogsByUserID)
+func (q *Queries) GetAuditLogsByUserID(ctx context.Context, userID string) ([]AuditLog, error) {
+	rows, err := q.db.QueryContext(ctx, getAuditLogsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,18 +100,40 @@ func (q *Queries) GetAuditLogsByUserID(ctx context.Context) ([]AuditLog, error) 
 const updateAuditLog = `-- name: UpdateAuditLog :exec
 UPDATE audit_logs
 SET
-    user_id = COALESCE($2, user_id),
-    action = COALESCE($3, action),
-    resource = COALESCE($4, resource),
-    timestamp = COALESCE($5, timestamp)
-WHERE id = $1
-  AND (COALESCE($2, user_id) != user_id
-         OR COALESCE($3, action) != action
-         OR COALESCE($4, resource) != resource
-         OR COALESCE($5, timestamp) != timestamp)
+    user_id = COALESCE(?, user_id),
+    action = COALESCE(?, action),
+    resource = COALESCE(?, resource),
+    timestamp = COALESCE(?, timestamp)
+WHERE id = ?
+  AND (COALESCE(?, user_id) != user_id
+         OR COALESCE(?, action) != action
+         OR COALESCE(?, resource) != resource
+         OR COALESCE(?, timestamp) != timestamp)
 `
 
-func (q *Queries) UpdateAuditLog(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateAuditLog)
+type UpdateAuditLogParams struct {
+	UserID      string
+	Action      string
+	Resource    string
+	Timestamp   time.Time
+	ID          string
+	UserID_2    string
+	Action_2    string
+	Resource_2  string
+	Timestamp_2 time.Time
+}
+
+func (q *Queries) UpdateAuditLog(ctx context.Context, arg UpdateAuditLogParams) error {
+	_, err := q.db.ExecContext(ctx, updateAuditLog,
+		arg.UserID,
+		arg.Action,
+		arg.Resource,
+		arg.Timestamp,
+		arg.ID,
+		arg.UserID_2,
+		arg.Action_2,
+		arg.Resource_2,
+		arg.Timestamp_2,
+	)
 	return err
 }

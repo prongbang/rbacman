@@ -7,32 +7,43 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const createUserGroup = `-- name: CreateUserGroup :exec
-INSERT INTO users_groups (user_id, group_id) VALUES ($1, $2)
+INSERT INTO users_groups (user_id, group_id) VALUES (?, ?)
 `
 
-func (q *Queries) CreateUserGroup(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createUserGroup)
+type CreateUserGroupParams struct {
+	UserID  sql.NullString
+	GroupID sql.NullString
+}
+
+func (q *Queries) CreateUserGroup(ctx context.Context, arg CreateUserGroupParams) error {
+	_, err := q.db.ExecContext(ctx, createUserGroup, arg.UserID, arg.GroupID)
 	return err
 }
 
 const deleteUserGroup = `-- name: DeleteUserGroup :exec
-DELETE FROM users_groups WHERE user_id = $1 AND group_id = $2
+DELETE FROM users_groups WHERE user_id = ? AND group_id = ?
 `
 
-func (q *Queries) DeleteUserGroup(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, deleteUserGroup)
+type DeleteUserGroupParams struct {
+	UserID  sql.NullString
+	GroupID sql.NullString
+}
+
+func (q *Queries) DeleteUserGroup(ctx context.Context, arg DeleteUserGroupParams) error {
+	_, err := q.db.ExecContext(ctx, deleteUserGroup, arg.UserID, arg.GroupID)
 	return err
 }
 
 const getUserGroupsByUserID = `-- name: GetUserGroupsByUserID :many
-SELECT id, user_id, group_id FROM users_groups WHERE user_id = $1
+SELECT id, user_id, group_id FROM users_groups WHERE user_id = ?
 `
 
-func (q *Queries) GetUserGroupsByUserID(ctx context.Context) ([]UsersGroup, error) {
-	rows, err := q.db.QueryContext(ctx, getUserGroupsByUserID)
+func (q *Queries) GetUserGroupsByUserID(ctx context.Context, userID sql.NullString) ([]UsersGroup, error) {
+	rows, err := q.db.QueryContext(ctx, getUserGroupsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,14 +68,28 @@ func (q *Queries) GetUserGroupsByUserID(ctx context.Context) ([]UsersGroup, erro
 const updateUserGroup = `-- name: UpdateUserGroup :exec
 UPDATE users_groups
 SET
-    user_id = COALESCE($2, user_id),
-    group_id = COALESCE($3, group_id)
-WHERE id = $1
-  AND (COALESCE($2, user_id) != user_id
-         OR COALESCE($3, group_id) != group_id)
+    user_id = COALESCE(?, user_id),
+    group_id = COALESCE(?, group_id)
+WHERE id = ?
+  AND (COALESCE(?, user_id) != user_id
+         OR COALESCE(?, group_id) != group_id)
 `
 
-func (q *Queries) UpdateUserGroup(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, updateUserGroup)
+type UpdateUserGroupParams struct {
+	UserID    sql.NullString
+	GroupID   sql.NullString
+	ID        int32
+	UserID_2  sql.NullString
+	GroupID_2 sql.NullString
+}
+
+func (q *Queries) UpdateUserGroup(ctx context.Context, arg UpdateUserGroupParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserGroup,
+		arg.UserID,
+		arg.GroupID,
+		arg.ID,
+		arg.UserID_2,
+		arg.GroupID_2,
+	)
 	return err
 }
