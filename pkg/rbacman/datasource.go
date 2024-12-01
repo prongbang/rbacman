@@ -3,7 +3,7 @@ package rbacman
 import (
 	"context"
 	"database/sql"
-	"github.com/prongbang/rbacman/internal/db"
+	"github.com/prongbang/rbacman/pkg/db"
 	"log/slog"
 )
 
